@@ -1,9 +1,9 @@
 from _01_environment.roboadvenv_v10 import RoboAdvisorEnvV10
-from _01_environment.universum import Universum
+from _01_environment.universe import InvestUniverse
 
 import pandas as pd
 
-universe = Universum()
+universe = InvestUniverse()
 
 
 def test_init():

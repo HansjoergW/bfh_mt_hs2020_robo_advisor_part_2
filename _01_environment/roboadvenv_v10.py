@@ -1,4 +1,4 @@
-from _01_environment.universum import Universum
+from _01_environment.universe import InvestUniverse
 
 import gym
 from gym.spaces import Tuple, Discrete, Box
@@ -11,7 +11,7 @@ from pandas import Timestamp
 
 class RoboAdvisorEnvV10(gym.Env):
 
-    def __init__(self, universe : Universum):
+    def __init__(self, universe : InvestUniverse):
         super(RoboAdvisorEnvV10, self).__init__()
 
         self.universe = universe
