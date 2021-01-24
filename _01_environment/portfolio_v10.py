@@ -62,14 +62,16 @@ class Portfolio():
         self._recalculate_cash(entry_dict)
 
     def _recalculate_cash(self, trade: Dict):
-        if trade['type'] == TradeType.BUY:
-            self.current_cash -= (trade['shares'] * trade['price']) + trade['cost']
-        else:
-            self.current_cash += (trade['shares'] * trade['price']) - trade['cost']
+        # since selling contains negative shares, we can use the same line
+        # to calculate the change in cash for buy and for sell
+        self.current_cash -= (trade['shares'] * trade['price']) + trade['cost']
 
     def get_current_positions(self):
         book_pd = pd.DataFrame(self.trading_book)
-
         return book_pd.groupby('ticker')['shares'].sum()
 
+    def get_get_evaluation_for(self, date: Timestamp):
+        pass
 
+        # next step total value for current day
+    # und den Verlauf des Vermögens basierend auf den TradingDays

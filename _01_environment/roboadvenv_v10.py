@@ -35,7 +35,6 @@ class RoboAdvisorEnvV10(gym.Env):
         # state, reward, done, ...
         return np.array([0]), 0, False, {}
 
-
     def _advance_time(self):
         current_monday = self.start_monday + pd.DateOffset(self.step_counter * 7)
         self.current_evaluation_day = self._find_next_trading_day(current_monday)
