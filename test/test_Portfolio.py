@@ -11,6 +11,7 @@ def test_init():
 
     assert portfolio is not None
 
+
 def test_buy_trade():
     portfolio = Portfolio(universe, 10000)
 
@@ -20,7 +21,7 @@ def test_buy_trade():
 
     assert portfolio.current_cash == 5000.0
 
-    curpos_pd = portfolio.get_current_positions()
+    curpos_pd = portfolio.get_positions()
     assert curpos_pd.shape[0] == 1
     assert curpos_pd.loc[buy_ticker] > 0
 
@@ -30,10 +31,19 @@ def test_buy_trade():
 
     assert portfolio.current_cash == 0.0
 
-    curpos_pd = portfolio.get_current_positions()
+    curpos_pd = portfolio.get_positions()
+
     assert curpos_pd.shape[0] == 2
     assert curpos_pd.loc[buy_ticker] > 0
     assert curpos_pd.loc[buy2_ticker] > 0
+
+    evaluate_date = pd.to_datetime("2017-01-31")
+    value = portfolio.get_evaluation(evaluate_date)
+
+    assert int(round(value)) == 10341
+
+    value_flow = portfolio.get_portfolio_flow()
+
 
 
 def test_buy_and_sell_trade():
@@ -48,8 +58,10 @@ def test_buy_and_sell_trade():
     sell_date = pd.to_datetime("2018-01-03")
     portfolio.add_sell_trade(ticker, sell_date)
 
-    curpos_pd = portfolio.get_current_positions()
-    assert curpos_pd.shape[0] == 1
-    assert curpos_pd.loc[ticker] == 0
+    curpos_pd = portfolio.get_positions()
+    assert curpos_pd.shape[0] == 0
 
-    print(portfolio.current_cash)
+    value = portfolio.get_evaluation(sell_date)
+    assert int(round(value)) == 12517
+
+

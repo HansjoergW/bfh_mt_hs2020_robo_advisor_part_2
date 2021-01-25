@@ -13,16 +13,29 @@ class InvestUniverse():
         self.data = InvestUniverse._load_data()
 
         self.companies = self.data.ticker.unique().tolist()
-        self.trading_days = self.data.index.unique().tolist()
+        self.trading_days = pd.Series(self.data.index.unique().tolist())
 
     def get_companies(self) -> List[str]:
         return self.companies
 
-    def get_trading_days(self) -> List[Timestamp]:
+    def get_trading_days(self) -> pd.Series:
         return self.trading_days
 
     def get_data(self, ticker: str, date: Timestamp) -> Dict:
         return self.data[self.data.ticker == ticker].loc[date].to_dict()
+
+    def find_trading_day_or_after(self, date: Timestamp):
+        return self.trading_days[self.trading_days >= date].min()
+
+    def find_trading_day_or_before(self, date: Timestamp):
+        return self.trading_days[self.trading_days <= date].max()
+
+    def get_close_for_per(self, tickers: List[str], date: Timestamp) -> pd.DataFrame:
+        return self.data[self.data.ticker.isin(tickers)].loc[date][['ticker','Close']].copy()
+
+    def get_close_for_tickers(self, tickers: List[str]) -> pd.DataFrame:
+        return self.data[self.data.ticker.isin(tickers)][['Date','ticker','Close']].reset_index(drop=True)
+
 
 
     @staticmethod
