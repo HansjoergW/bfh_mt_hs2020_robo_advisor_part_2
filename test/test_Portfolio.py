@@ -42,7 +42,8 @@ def test_buy_trade():
 
     assert int(round(value)) == 10341
 
-    value_flow = portfolio.get_portfolio_flow()
+    portfolio_flow = portfolio.get_portfolio_flow()
+    assert int(round(portfolio_flow.loc[evaluate_date].total_current)) == 10341
 
 
 
@@ -63,5 +64,8 @@ def test_buy_and_sell_trade():
 
     value = portfolio.get_evaluation(sell_date)
     assert int(round(value)) == 12517
+
+    portfolio_flow = portfolio.get_portfolio_flow()
+    assert int(round(portfolio_flow.loc[sell_date].total_current)) == 12517
 
 
