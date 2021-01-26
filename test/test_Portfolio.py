@@ -1,5 +1,5 @@
 from _01_environment.universe import InvestUniverse
-from _01_environment.portfolio_v10 import Portfolio, TradeType
+from _01_environment.portfolio import Portfolio, TradeType
 
 import pandas as pd
 

@@ -1,5 +1,3 @@
-# manages the portfolio
-
 from _01_environment.universe import InvestUniverse
 import pandas as pd
 import numpy as np
@@ -7,6 +5,8 @@ from pandas import Timestamp
 from typing import List, Dict, Union
 from enum import Enum
 
+# ToDos:
+# it might be better to pass the sell/buy price instead of simply using the mid_price
 
 class TradeType(Enum):
     BUY = 1
@@ -14,6 +14,8 @@ class TradeType(Enum):
 
 
 class Portfolio():
+    """ manages the portfolio. keeps track of cash and trading actions.
+    """
 
     def __init__(self, universe: InvestUniverse, cash: float, trading_cost: float = 40.0, buy_volume: float = 5000.0):
         self.universe = universe
@@ -28,8 +30,11 @@ class Portfolio():
         start_date = self.universe.get_trading_days()[0]
         self.cash_book.append({"date": start_date, "amount": cash, "what": "cash_start"})
 
-    def add_buy_trade(self, ticker: str, date: Timestamp):
+    def add_buy_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a buy trade to the book. """
+        if trading_cost is None:
+            trading_cost = self.trading_cost
+
         data_dict = self.universe.get_data(ticker, date)
 
         shares = (self.buy_volume - self.trading_cost) / data_dict['mid_price']
@@ -38,7 +43,7 @@ class Portfolio():
             'type': TradeType.BUY,
             'ticker': ticker,
             'date': date,
-            'cost': self.trading_cost,
+            'cost': trading_cost,
             'price': data_dict['mid_price'],
             'potential': data_dict['r_potential'],
             'prediction': data_dict['prediction'],
@@ -49,8 +54,11 @@ class Portfolio():
         self.trading_book.append(entry_dict)
         self._recalculate_cash(entry_dict)
 
-    def add_sell_trade(self, ticker: str, date: Timestamp):
+    def add_sell_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a sell trade to the book. """
+        if trading_cost is None:
+            trading_cost = self.trading_cost
+
         data_dict = self.universe.get_data(ticker, date)
 
         # we always sell the whole position
@@ -60,7 +68,7 @@ class Portfolio():
             'type': TradeType.SELL,
             'ticker': ticker,
             'date': date,
-            'cost': self.trading_cost,
+            'cost': trading_cost,
             'price': data_dict['mid_price'],
             'potential': data_dict['r_potential'],
             'prediction': data_dict['prediction'],
@@ -95,6 +103,10 @@ class Portfolio():
         book_pd = pd.DataFrame(self.trading_book)
         book_pd = book_pd[book_pd.date <= date]
         positions = book_pd.groupby('ticker')['shares'].sum()
+
+        ergänzen mit letztem buy inkl. price und prediction.. (last_buy_price, last_buy_prediction)
+
+
         return positions[positions > 0]
 
     def get_evaluation(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> float:
@@ -128,7 +140,6 @@ class Portfolio():
             current_value = (merged.Close * merged.shares).sum().item()
 
         value = self.start_cash - cost_all_transactions + all_buys_and_sells + current_value
-
         return value
 
     def get_cash_flow(self) -> pd.DataFrame :
@@ -138,6 +149,7 @@ class Portfolio():
 
         trading_days = pd.Series(self.universe.get_trading_days()).to_frame()
         trading_days.columns = ['date']
+
         merged = pd.merge(trading_days, cash_book_day_pd, how="outer", on="date")
         merged.replace(np.NaN, 0, inplace=True)
         merged['i_date'] = merged.date
@@ -187,10 +199,3 @@ class Portfolio():
         merged['total_current'] = merged.value_current + merged.cash_current
         return merged
 
-
-
-
-
-
-
-        # und den Verlauf des Vermögens basierend auf den TradingDays

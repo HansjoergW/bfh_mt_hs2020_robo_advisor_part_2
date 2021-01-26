@@ -2,16 +2,15 @@ from _01_environment.universe import InvestUniverse
 
 import pandas as pd
 
+universe = InvestUniverse()
+
 
 def test_init():
-    universe = InvestUniverse()
-
     assert len(universe.get_companies()) > 100
     assert len(universe.get_trading_days()) > 100
 
 
 def test_get_data():
-    universe = InvestUniverse()
     a_date = pd.to_datetime('2017-01-04')
     ticker = 'AAPL'
 
@@ -23,7 +22,6 @@ def test_get_data():
 
 
 def test_find_trading_day_or_after():
-    universe = InvestUniverse()
     a_date = pd.to_datetime('2017-01-01')
 
     result = universe.find_trading_day_or_after(a_date)
@@ -35,7 +33,6 @@ def test_find_trading_day_or_after():
 
 
 def test_find_trading_day_or_before():
-    universe = InvestUniverse()
     a_date = pd.to_datetime('2017-01-08')
 
     result = universe.find_trading_day_or_before(a_date)
@@ -44,3 +41,11 @@ def test_find_trading_day_or_before():
     a_date = pd.to_datetime('2017-01-04')
     result = universe.find_trading_day_or_before(a_date)
     assert result == pd.to_datetime("2017-01-04")
+
+
+def test_get_prediction():
+    a_date = pd.to_datetime('2017-01-04')
+    trading_date = universe.find_trading_day_or_before(a_date)
+
+    result = universe.get_predictions_per(trading_date)
+    print("")
