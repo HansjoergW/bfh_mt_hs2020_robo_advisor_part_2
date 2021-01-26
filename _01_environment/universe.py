@@ -49,7 +49,7 @@ class InvestUniverse():
         return self.data[self.data.ticker.isin(tickers)][['Date','ticker','Close']].reset_index(drop=True)
 
     def get_predictions_per(self, date: Timestamp) -> pd.DataFrame:
-        return self.data.loc[date][['ticker', 'prediction']].copy()
+        return self.data.loc[date][['ticker', 'prediction']].copy().reset_index(drop=True)
 
 
     @staticmethod

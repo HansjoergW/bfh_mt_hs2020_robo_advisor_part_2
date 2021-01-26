@@ -32,3 +32,19 @@ def test_advance():
     env._advance_time()
     assert env.current_evaluation_day == pd.to_datetime("2017-12-26")
     assert env.current_trading_day == pd.to_datetime("2017-12-27")
+
+
+def test__calculate_state():
+    env = RoboAdvisorEnvV10(universe)
+    env.reset()
+
+    buy_date = pd.to_datetime("2017-01-03")
+    buy_ticker = "AAPL"
+    env.portfolio.add_buy_trade(buy_ticker, buy_date)
+
+    buy2_ticker = "MSFT"
+    env.portfolio.add_buy_trade(buy2_ticker, buy_date)
+
+    calc_date = pd.to_datetime("2017-01-06")
+    env._calculate_state(calc_date)
+    print("")

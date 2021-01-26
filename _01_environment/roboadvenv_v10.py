@@ -26,8 +26,8 @@ class RoboAdvisorEnvV10(gym.Env):
         
         # first friday in 2017
         self.start_friday = pd.to_datetime("2017-01-06")
-        self.current_evaluation_day: Timestamp = self._find_next_trading_day(self.start_monday)
-        self.current_trading_day: Timestamp = self._find_next_trading_day(self.current_evaluation_day + pd.DateOffset(1))
+        self.current_evaluation_day: Timestamp = self.universe.find_trading_day_or_before(self.start_friday)
+        self.current_trading_day: Timestamp = self.universe.find_trading_day_or_after(self.current_evaluation_day + pd.DateOffset(1))
 
         self.portfolio: Union[Portfolio, None] = None
 
@@ -70,11 +70,14 @@ class RoboAdvisorEnvV10(gym.Env):
         # - (the prediction at which it had been bought)
         # - (the value at which it had been bought)
 
-        # returns index:date [ticker,prediction]
+        # returns [ticker,prediction]
+        falsch hier möchte ich ticker und current_prediction und current close
         predictions = self.universe.get_predictions_per(date)
 
-        self.portfolio.get_positions(date)
+        # returns index = ['shares', 'buy_prediction', 'buy_price', 'buy_date']
+        current_positions = self.portfolio.get_positions(date)
 
+        print("")
 
         # we normalisieren? muss nicht perfekt sein
         # https://stats.stackexchange.com/questions/347623/using-non-normalized-data-for-learning-a-rl-agent-using-ppo

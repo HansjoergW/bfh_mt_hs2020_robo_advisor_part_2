@@ -103,11 +103,21 @@ class Portfolio():
         book_pd = pd.DataFrame(self.trading_book)
         book_pd = book_pd[book_pd.date <= date]
         positions = book_pd.groupby('ticker')['shares'].sum()
+        positions = positions[positions > 0].to_frame()
 
-        ergänzen mit letztem buy inkl. price und prediction.. (last_buy_price, last_buy_prediction)
+        last_buys = []
+        for ticker in positions.index.tolist():
+            book_by_ticker = book_pd[(book_pd.ticker == ticker) & (book_pd.type == TradeType.BUY)]
+            last_buy_ticker = book_by_ticker[book_by_ticker.date == book_by_ticker.date.max()]
+            last_buys.append(last_buy_ticker)
 
+        last_buys_pd = pd.concat(last_buys)[['ticker', 'prediction','price', 'date']]
+        last_buys_pd.columns = ['ticker', 'buy_prediction','buy_price', 'buy_date']
+        last_buys_pd.set_index('ticker', inplace=True)
 
-        return positions[positions > 0]
+        merged = pd.merge(positions, last_buys_pd, right_index=True, left_index=True)
+
+        return merged
 
     def get_evaluation(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> float:
         """
