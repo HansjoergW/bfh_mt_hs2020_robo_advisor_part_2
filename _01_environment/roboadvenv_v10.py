@@ -10,7 +10,7 @@ from typing import List, Dict, Union
 
 # Todo
 # - as an additional input the "deviation" from prediction and real potential a year ago could be used.
-#   with this value the agen might be able to take a guess on how good the prediction for a stock tends to be
+#   with this value the agent might be able to take a guess on how good the prediction for a stock tends to be
 
 
 class RoboAdvisorEnvV10(gym.Env):
@@ -67,15 +67,38 @@ class RoboAdvisorEnvV10(gym.Env):
         # - how many days ago that stock had been bought (or -1 if it isn't in the portfolio)
         # - value_change in % since bought (or 0 if not in the portfolio)
         # - prediction change in % since bought (or 0 if not in the portfolio)
-        # - (the prediction at which it had been bought)
-        # - (the value at which it had been bought)
+        #
+        # it would also be possible to add real values of prediction and buy price,
+        # but in these case these values need to be normalized somehow. Therefore it might be better
+        # to just use change for prediction and price
 
-        # returns [ticker,prediction]
-        falsch hier möchte ich ticker und current_prediction und current close
-        predictions = self.universe.get_predictions_per(date)
+        # returns [ticker,prediction, close]
+        current_values = self.universe.get_data_per(date, ['ticker', 'prediction', 'Close'])
+        current_values.set_index('ticker', inplace=True)
 
         # returns index = ['shares', 'buy_prediction', 'buy_price', 'buy_date']
         current_positions = self.portfolio.get_positions(date)
+
+        merged = pd.merge(current_values, current_positions, how="left", left_index=True, right_index=True)
+
+        # holding_days, normalised as years
+        merged['holding_days'] = date - merged.buy_date
+        merged['holding_days'] = merged[~merged.holding_days.isna()].holding_days.dt.days / 365
+
+        merged['price_change'] = (merged.Close - merged.buy_price) / merged.buy_price
+        merged['prediction_change'] = (merged.prediction - merged.buy_prediction) / merged.buy_prediction
+
+        with_shares = merged[~merged.shares.isna()]
+        total_invest = (with_shares.shares * with_shares.Close).sum()
+        merged.loc[:, 'portion'] = with_shares.shares * with_shares.Close / total_invest
+
+        merged.holding_days.fillna(-1, inplace=True)
+        merged.price_change.fillna(0, inplace=True)
+        merged.prediction_change.fillna(0, inplace=True)
+        merged.portion.fillna(0, inplace=True)
+
+
+
 
         print("")
 

@@ -47,4 +47,4 @@ def test_get_prediction():
     a_date = pd.to_datetime('2017-01-04')
     trading_date = universe.find_trading_day_or_before(a_date)
 
-    assert 400 < universe.get_predictions_per(trading_date).shape[0]
+    assert 400 < universe.get_data_per(trading_date, ['ticker', 'prediction', 'close']).shape[0]
