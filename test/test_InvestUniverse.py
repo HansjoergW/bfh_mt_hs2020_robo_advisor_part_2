@@ -32,6 +32,11 @@ def test_find_trading_day_or_after():
     assert result == pd.to_datetime("2017-01-04")
 
 
+    a_date = pd.to_datetime('2100-01-01')
+    result = universe.find_trading_day_or_after(a_date)
+    assert pd.isnull(result)
+
+
 def test_find_trading_day_or_before():
     a_date = pd.to_datetime('2017-01-08')
 

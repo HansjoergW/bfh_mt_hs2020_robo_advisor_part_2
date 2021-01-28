@@ -2,6 +2,7 @@ from _01_environment.roboadvenv_v10 import RoboAdvisorEnvV10
 from _01_environment.universe import InvestUniverse
 
 import pandas as pd
+import numpy as np
 
 universe = InvestUniverse()
 
@@ -34,7 +35,7 @@ def test_advance():
     assert env.current_trading_day == pd.to_datetime("2017-12-27")
 
 
-def test__calculate_state():
+def test_calculate_state():
     env = RoboAdvisorEnvV10(universe)
     env.reset()
 
@@ -48,3 +49,32 @@ def test__calculate_state():
     calc_date = pd.to_datetime("2017-01-06")
     env._calculate_state(calc_date)
     print("")
+
+
+def test_calculate_reward():
+    env = RoboAdvisorEnvV10(universe)
+    env.current_value_holder = np.arange(10)
+
+    assert env._calculate_reward(0, 1) == 0.0
+    assert env._calculate_reward(1, 1) == 1.0
+    assert env._calculate_reward(2, 1) == 1.0
+
+    assert env._calculate_reward(0, 2) == 0.0
+    assert env._calculate_reward(1, 2) == 0.0
+    assert env._calculate_reward(2, 2) == 1.0
+    assert env._calculate_reward(3, 2) == 1.0
+
+    env.current_value_holder = np.ones(10)
+    assert env._calculate_reward(0, 1) == 0.0
+    assert env._calculate_reward(1, 1) == 0.0
+    assert env._calculate_reward(2, 1) == 0.0
+
+    env.current_value_holder = np.array([0, 0, 0, 1, 0, 0, 1])
+    assert env._calculate_reward(0, 1) == 0.0
+    assert env._calculate_reward(1, 1) == 0.0
+    assert env._calculate_reward(2, 1) == 0.0
+    assert env._calculate_reward(3, 1) == 1.0
+    assert env._calculate_reward(1, 2) == 0.0
+    assert env._calculate_reward(2, 2) == 0.0
+    assert env._calculate_reward(3, 2) == 0.5
+

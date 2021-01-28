@@ -139,7 +139,7 @@ class Portfolio():
         tickers = positions.index.to_list()
 
         current_value = 0.0
-        if len(tickers):
+        if len(tickers) > 0:
             close_values = self.universe.get_close_for_per(tickers, trading_day)
             close_values.reset_index(drop=True, inplace=True)
 
