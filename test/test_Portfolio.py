@@ -23,7 +23,7 @@ def test_buy_trade():
 
     curpos_pd = portfolio.get_positions()
     assert curpos_pd.shape[0] == 1
-    assert curpos_pd.loc[buy_ticker] > 0
+    assert curpos_pd.loc[buy_ticker].shares > 0
 
     buy2_date = pd.to_datetime("2017-01-03")
     buy2_ticker = "MSFT"
@@ -34,8 +34,8 @@ def test_buy_trade():
     curpos_pd = portfolio.get_positions()
 
     assert curpos_pd.shape[0] == 2
-    assert curpos_pd.loc[buy_ticker] > 0
-    assert curpos_pd.loc[buy2_ticker] > 0
+    assert curpos_pd.loc[buy_ticker].shares > 0
+    assert curpos_pd.loc[buy2_ticker].shares > 0
 
     evaluate_date = pd.to_datetime("2017-01-31")
     value = portfolio.get_evaluation(evaluate_date)
@@ -67,5 +67,29 @@ def test_buy_and_sell_trade():
 
     portfolio_flow = portfolio.get_portfolio_flow()
     assert int(round(portfolio_flow.loc[sell_date].total_current)) == 12517
+
+
+def test_on_empty():
+    portfolio = Portfolio(universe, 10_000)
+
+    positions = portfolio.get_positions()
+    assert positions.shape[0] == 0
+
+    evaluation = portfolio.get_evaluation()
+    assert evaluation == 10_000
+
+    cash_flow = portfolio.get_cash_flow()
+    assert cash_flow.shape[0] == universe.get_trading_days().shape[0]
+    assert (cash_flow.cash_current == 10000).all()
+
+    portfolio_flow_per_title = portfolio.get_portfolio_flow_per_title()
+    assert portfolio_flow_per_title.shape[0] == 0
+
+    portfolio_flow = portfolio.get_portfolio_flow()
+    assert portfolio_flow.shape[0] == universe.get_trading_days().shape[0]
+    assert (portfolio_flow.total_current == 10000).all()
+
+
+
 
 

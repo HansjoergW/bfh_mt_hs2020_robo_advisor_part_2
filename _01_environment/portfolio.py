@@ -5,6 +5,7 @@ from pandas import Timestamp
 from typing import List, Dict, Union
 from enum import Enum
 
+
 # ToDos:
 # it might be better to pass the sell/buy price instead of simply using the mid_price
 
@@ -97,13 +98,22 @@ class Portfolio():
             "amount": -trade['cost']
         })
 
-    def get_positions(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> pd.DataFrame :
+    def _get_trading_book_bd(self):
+        return pd.DataFrame(self.trading_book, columns=[
+            'type', 'ticker', 'date', 'cost', 'price', 'potential', 'prediction', 'shares', 'amount'
+        ])
+
+    def get_positions(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> pd.DataFrame:
         """ returns the current positions at a specific date"""
 
-        book_pd = pd.DataFrame(self.trading_book)
+        book_pd = self._get_trading_book_bd()
+
         book_pd = book_pd[book_pd.date <= date]
         positions = book_pd.groupby('ticker')['shares'].sum()
         positions = positions[positions > 0].to_frame()
+
+        if positions.shape[0] == 0:
+            return pd.DataFrame(columns = ['shares', 'buy_prediction', 'buy_price', 'buy_date'])
 
         last_buys = []
         for ticker in positions.index.tolist():
@@ -111,8 +121,8 @@ class Portfolio():
             last_buy_ticker = book_by_ticker[book_by_ticker.date == book_by_ticker.date.max()]
             last_buys.append(last_buy_ticker)
 
-        last_buys_pd = pd.concat(last_buys)[['ticker', 'prediction','price', 'date']]
-        last_buys_pd.columns = ['ticker', 'buy_prediction','buy_price', 'buy_date']
+        last_buys_pd = pd.concat(last_buys)[['ticker', 'prediction', 'price', 'date']]
+        last_buys_pd.columns = ['ticker', 'buy_prediction', 'buy_price', 'buy_date']
         last_buys_pd.set_index('ticker', inplace=True)
 
         merged = pd.merge(positions, last_buys_pd, right_index=True, left_index=True)
@@ -128,16 +138,18 @@ class Portfolio():
 
         trading_day = self.universe.find_trading_day_or_before(date)
 
-        book_pd = pd.DataFrame(self.trading_book)
+        book_pd = self._get_trading_book_bd()
         book_pd = book_pd[book_pd.date <= trading_day]
 
         # value = start_cash - all transaction costs - all buys + all sells + current position value
-        cost_all_transactions = book_pd.cost.sum().item()
-        all_buys_and_sells = book_pd.amount.sum().item()
+        cost_all_transactions = 0.0
+        all_buys_and_sells = 0.0
+        if book_pd.shape[0] > 0:
+            cost_all_transactions = book_pd.cost.sum().item()
+            all_buys_and_sells = book_pd.amount.sum().item()
 
         positions = self.get_positions(trading_day)
         tickers = positions.index.to_list()
-
         current_value = 0.0
         if len(tickers) > 0:
             close_values = self.universe.get_close_for_per(tickers, trading_day)
@@ -152,10 +164,10 @@ class Portfolio():
         value = self.start_cash - cost_all_transactions + all_buys_and_sells + current_value
         return value
 
-    def get_cash_flow(self) -> pd.DataFrame :
+    def get_cash_flow(self) -> pd.DataFrame:
         """ returns the cash flow ober the whole period."""
         cash_book_pd = pd.DataFrame(self.cash_book)
-        cash_book_day_pd = cash_book_pd[['date','amount']].groupby(['date']).sum()
+        cash_book_day_pd = cash_book_pd[['date', 'amount']].groupby(['date']).sum()
 
         trading_days = pd.Series(self.universe.get_trading_days()).to_frame()
         trading_days.columns = ['date']
@@ -173,16 +185,18 @@ class Portfolio():
         """ returns the portfolio flow on ticker basis.
             so contains an entry for every ticker and date where stocks of that company were held.
         """
-        book_pd = pd.DataFrame(self.trading_book)
+        book_pd = self._get_trading_book_bd()
 
         tickers = book_pd.ticker.unique().tolist()
 
         close_prices = self.universe.get_close_for_tickers(tickers)
-        close_prices.rename(columns={'Date':'date'}, inplace=True)
+        close_prices.rename(columns={'Date': 'date'}, inplace=True)
+        if close_prices.shape[0] == 0:
+            return pd.DataFrame(columns = ['ticker', 'shares_current', 'value_current'])
 
         # merge the date from the trading book with the close prices
-        merged = pd.merge(close_prices, book_pd[['date','ticker','shares']], how="left", on=['date','ticker'])
-        merged.rename(columns={'shares':'shares_chg'}, inplace=True)
+        merged = pd.merge(close_prices, book_pd[['date', 'ticker', 'shares']], how="left", on=['date', 'ticker'])
+        merged.rename(columns={'shares': 'shares_chg'}, inplace=True)
         merged.replace(np.NaN, 0, inplace=True)
 
         merged['i_date'] = merged.date
@@ -192,7 +206,7 @@ class Portfolio():
         merged['shares_current'] = merged.groupby("ticker").shares_chg.cumsum()
         merged['value_current'] = merged.shares_current * merged.Close
 
-        return merged[['ticker', 'shares_current','value_current']]
+        return merged[['ticker', 'shares_current', 'value_current']]
 
     def get_portfolio_flow(self) -> pd.DataFrame:
         """
@@ -202,10 +216,17 @@ class Portfolio():
         cash_flow_pd = self.get_cash_flow()
 
         portfolio_flow_per_title_pd = self.get_portfolio_flow_per_title()
+
+        # if there are no traded stocks, then just return the cash
+        if portfolio_flow_per_title_pd.shape[0] == 0:
+            cash_flow_pd['value_current'] = 0.0
+            cash_flow_pd['total_current'] = cash_flow_pd.cash_current
+            return cash_flow_pd
+
         portfolio_flow_pd = portfolio_flow_per_title_pd['value_current'].groupby('i_date').sum().to_frame()
         portfolio_flow_pd.columns = ['value_current']
 
-        merged = pd.merge(portfolio_flow_pd, cash_flow_pd[['cash_current']], how="outer", left_index=True, right_index=True)
+        merged = pd.merge(portfolio_flow_pd, cash_flow_pd[['cash_current']], how="outer", left_index=True,
+                          right_index=True)
         merged['total_current'] = merged.value_current + merged.cash_current
         return merged
-

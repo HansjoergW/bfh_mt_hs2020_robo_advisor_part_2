@@ -2,7 +2,7 @@ from _01_environment.universe import InvestUniverse
 from _01_environment.portfolio import Portfolio
 
 import gym
-from gym.spaces import Tuple, Discrete, Box
+from gym.spaces import Tuple, MultiDiscrete, Box
 import numpy as np
 import pandas as pd
 from pandas import Timestamp
@@ -34,9 +34,21 @@ class RoboAdvisorEnvV10(gym.Env):
 
         self.portfolio: Union[Portfolio, None] = None
 
+        nr_of_companies = len(self.universe.get_companies())
+
         # numpy array to hold the current value at every step
         # the size is large enough so that we could use a step-size of one day
         self.current_value_holder = np.zeros(len(self.trading_days_ser))
+
+        # bounds based on the data we will prepare
+        # we have 5 values per company: 'prediction', 'prediction_change', 'holding_days', 'price_change', 'portion'
+        self.observation_space = Box(low=-2.0, high=3.0, shape=(nr_of_companies, 5), dtype=np.float32)
+
+        # for every company there can be a sell, buy or do nothing action
+        # https://github.com/openai/gym/blob/master/gym/spaces/multi_discrete.py
+        self.action_space = MultiDiscrete([3] * len(self.universe.get_companies()))
+
+        self.zero_state = np.zeros((nr_of_companies, 5), dtype = np.float32)
 
     def reset(self):
         self.step_counter = 0
@@ -47,8 +59,14 @@ class RoboAdvisorEnvV10(gym.Env):
         return self._calculate_state(self.current_evaluation_day)
 
     def step(self, actions):
+        if self.is_done:
+            return self.zero_state, 0, self.is_done
+
+
         # actions are executed on the current trading day
-        
+        # todo: execute actions
+
+
         # after that, we need to advance
         self.step_counter += 1
         self._advance_time()
@@ -56,6 +74,7 @@ class RoboAdvisorEnvV10(gym.Env):
         # and calculate the new state based on the new current evaluation day
         state = self._calculate_state(self.current_evaluation_day)
 
+        # get the performance
         self.current_value_holder[self.step_counter] = self.portfolio.get_evaluation(self.current_evaluation_day)
 
         # the reward is the average gain over the last 'reward_average_count' steps.
@@ -122,7 +141,9 @@ class RoboAdvisorEnvV10(gym.Env):
 
         # holding_days, normalised as 'years'
         merged['holding_days'] = date - merged.buy_date
-        merged['holding_days'] = merged[~merged.holding_days.isna()].holding_days.dt.days / 365
+
+        if current_positions.shape[0] > 0:
+            merged['holding_days'] = merged[~merged.holding_days.isna()].holding_days.dt.days / 365
 
         merged['price_change'] = (merged.Close - merged.buy_price) / merged.buy_price
         merged['prediction_change'] = (merged.prediction - merged.buy_prediction) / merged.buy_prediction
@@ -151,7 +172,7 @@ class RoboAdvisorEnvV10(gym.Env):
         assert result_np.shape[0] == len(self.universe.get_companies())
         assert np.count_nonzero(np.isnan(result_np)) == 0
 
-        return result_np
+        return result_np.reshape(-1)
 
 
 
