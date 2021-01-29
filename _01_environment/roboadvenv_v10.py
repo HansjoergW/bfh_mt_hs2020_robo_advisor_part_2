@@ -94,6 +94,9 @@ class RoboAdvisorEnvV10(gym.Env):
         # state, reward, done, ...
         return state, reward, self.is_done, {}
 
+    def get_current_value(self):
+        return self.current_value_holder[self.step_counter]
+
     def _execute_actions(self, actions: List[int]):
         action_ser = pd.Series(actions, name= 'action')
         action_pd = pd.concat([self.sorted_companies_ser, action_ser], axis= 1)
