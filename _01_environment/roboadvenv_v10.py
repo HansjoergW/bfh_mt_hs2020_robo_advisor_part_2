@@ -61,7 +61,7 @@ class RoboAdvisorEnvV10(gym.Env):
         self.zero_state = np.zeros((nr_of_companies, 5), dtype = np.float32)
 
     def reset(self):
-        print("start episode")
+        print("\nstart episode", end="")
         # numpy array to hold the current value at every step
         # the size is large enough so that we could use a step-size of one day
         self.current_value_holder = np.zeros(len(self.trading_days_ser))
@@ -97,8 +97,6 @@ class RoboAdvisorEnvV10(gym.Env):
         # get the performance
         self.current_value_holder[self.step_counter] = \
             self.portfolio.get_current_evaluation(self.current_evaluation_day)
-
-        assert int(self.current_value_holder[self.step_counter]) == int (self.portfolio.get_evaluation(self.current_evaluation_day))
 
         # the reward is the average gain over the last 'reward_average_count' steps.
         # by using the average we hope to smooth it and make the training more stable

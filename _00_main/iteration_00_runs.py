@@ -34,7 +34,7 @@ HYPERPARAMS = {
         'bridge_optimizer'            : None,     # Optimizer -> default ist Adam
         'bridge_learning_rate'        : 0.0001,   # learningrate
         'bridge_gamma'                : 0.9,      # discount_factor for reward
-        'bridge_initial_population'   : 1000,     # initial number of experiences in buffer
+        'bridge_initial_population'   : 200,     # initial number of experiences in buffer
         'bridge_batch_size'           : 32,       # batch_size for training
 
         # loop control

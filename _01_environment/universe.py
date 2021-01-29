@@ -18,7 +18,7 @@ class InvestUniverse():
         self.data = InvestUniverse._load_data()
 
         self.companies = self.data.ticker.unique().tolist()
-        self.trading_days = pd.Series(self.data.index.unique().tolist())
+        self.trading_days = pd.Series(self.data.Date.unique()).sort_values()
 
     def get_companies(self) -> List[str]:
         """ returns a list with all the ticker symbols in the data"""
@@ -30,7 +30,9 @@ class InvestUniverse():
 
     def get_data(self, ticker: str, date: Timestamp) -> Dict:
         """ returns the information of ticker on the provided date as dictionary."""
-        return self.data[self.data.ticker == ticker].loc[date].to_dict()
+        # return self.data[self.data.ticker == ticker].loc[date].to_dict()
+        date_entry = self.data.loc[date,ticker]
+        return date_entry.to_dict()
 
     def find_trading_day_or_after(self, date: Timestamp):
         """ searches the next trading day if the provided date is not a trading day. """
@@ -42,11 +44,12 @@ class InvestUniverse():
 
     def get_close_for_per(self, tickers: List[str], date: Timestamp) -> pd.DataFrame:
         """ get the close prices for all provided tickers for a specific date. """
-        return self.data[self.data.ticker.isin(tickers)].loc[date][['ticker','Close']].copy()
+        date_date = self.data.loc[date]
+        return date_date.loc[date_date.index.isin(tickers)][['ticker','Close']].copy()
 
     def get_close_for_tickers(self, tickers: List[str]) -> pd.DataFrame:
         """ gets the closing prices for all tickers for all trading days in the data. """
-        return self.data[self.data.ticker.isin(tickers)][['Date','ticker','Close']].reset_index(drop=True)
+        return self.data.loc[self.data.index.isin(tickers, level=1)][['Date','ticker','Close']].reset_index(drop=True)
 
     def get_data_per(self, date: Timestamp, cols: List[str]) -> pd.DataFrame:
         return self.data.loc[date][cols].copy().reset_index(drop=True)
@@ -60,7 +63,8 @@ class InvestUniverse():
         df['mid_price'] = (df.High + df.Low) / 2
 
         df['i_date'] = df.Date
-        df.set_index('i_date', inplace=True)
+        df['i_ticker'] = df.ticker
+        df.set_index(['i_date', 'i_ticker'], inplace=True)
         df.sort_index(inplace=True)
 
         return df
