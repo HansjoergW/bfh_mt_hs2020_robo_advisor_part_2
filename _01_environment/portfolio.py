@@ -31,6 +31,9 @@ class Portfolio():
         start_date = self.universe.get_trading_days()[0]
         self.cash_book.append({"date": start_date, "amount": cash, "what": "cash_start"})
 
+    def number_of_possible_buy_trades_based_on_cash(self):
+        return int(self.current_cash / self.buy_volume)
+
     def add_buy_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a buy trade to the book. """
         if trading_cost is None:
@@ -63,7 +66,7 @@ class Portfolio():
         data_dict = self.universe.get_data(ticker, date)
 
         # we always sell the whole position
-        shares = self.get_positions().loc[ticker]
+        shares = self.get_positions(date).loc[ticker].shares
 
         entry_dict = {
             'type': TradeType.SELL,

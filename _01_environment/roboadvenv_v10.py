@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from pandas import Timestamp
 from typing import List, Dict, Union
+import random
 
 # Todo
 # - as an additional input the "deviation" from prediction and real potential a year ago could be used.
@@ -18,12 +19,13 @@ REWARD_AVERAGE_COUNT = 3
 
 class RoboAdvisorEnvV10(gym.Env):
 
-    def __init__(self, universe : InvestUniverse, reward_average_count: int = REWARD_AVERAGE_COUNT):
+    def __init__(self, universe : InvestUniverse, reward_average_count: int = REWARD_AVERAGE_COUNT,
+                 start_cash: float = 100_000.0):
         super(RoboAdvisorEnvV10, self).__init__()
 
         self.universe = universe
         self.trading_days_ser = pd.Series(self.universe.get_trading_days())
-        self.start_cash = 100_000.0
+        self.start_cash = start_cash
         self.reward_average_count = reward_average_count
 
         self.step_counter = 0
@@ -35,6 +37,9 @@ class RoboAdvisorEnvV10(gym.Env):
         self.portfolio: Union[Portfolio, None] = None
 
         nr_of_companies = len(self.universe.get_companies())
+        self.sorted_companies = list(self.universe.get_companies())
+        self.sorted_companies.sort()
+        self.sorted_companies_ser = pd.Series(self.sorted_companies,  name='ticker')
 
         # numpy array to hold the current value at every step
         # the size is large enough so that we could use a step-size of one day
@@ -59,13 +64,16 @@ class RoboAdvisorEnvV10(gym.Env):
         return self._calculate_state(self.current_evaluation_day)
 
     def step(self, actions):
+        """ actions:
+        0: Do nothing
+        1: buy
+        2: sell
+        """
         if self.is_done:
             return self.zero_state, 0, self.is_done
 
-
         # actions are executed on the current trading day
-        # todo: execute actions
-
+        self._execute_actions(actions.tolist())
 
         # after that, we need to advance
         self.step_counter += 1
@@ -85,6 +93,50 @@ class RoboAdvisorEnvV10(gym.Env):
 
         # state, reward, done, ...
         return state, reward, self.is_done, {}
+
+    def _execute_actions(self, actions: List[int]):
+        action_ser = pd.Series(actions, name= 'action')
+        action_pd = pd.concat([self.sorted_companies_ser, action_ser], axis= 1)
+        action_pd.set_index('ticker', inplace= True)
+
+        positions = self.portfolio.get_positions(self.current_trading_day)
+
+        # first: execute sell action - we can only sell shares we own
+        to_sell = pd.merge(action_pd[action_pd.action == 2], positions, left_index=True, right_index=True)
+        tickers_to_sell = to_sell.index.to_list()
+        for ticker in tickers_to_sell:
+            self.portfolio.add_sell_trade(ticker, self.current_trading_day)
+
+        # second: execute buy action
+        # how many titles can be bought based on the available cash?
+        possible_buy_trades = self.portfolio.number_of_possible_buy_trades_based_on_cash()
+        if possible_buy_trades == 0:  # if there is no cash left to buy .. return
+            return
+
+        tickers_to_buy = set(action_pd[action_pd.action == 1].index.to_list())
+
+        # don't buy if already in portfolio
+        tickers_to_buy = tickers_to_buy - set(positions.index.to_list())
+        if len(tickers_to_buy) == 0:
+            return
+
+        # if there are more 'buy' suggestions than there is cash to buy all, we have to decide which to buy
+        if len(tickers_to_buy) > possible_buy_trades:
+
+            # we could either select completely randomly or we could for instance
+            # use the prediction to narrow the possible candidates
+            trading_day_predictions = self.universe.get_data_per(self.current_trading_day, ['ticker', 'prediction'])
+            tickers_to_buy_predictions = trading_day_predictions[trading_day_predictions.ticker.isin(tickers_to_buy)]
+
+            top_x_elements_to_select = min(possible_buy_trades * 3, len(tickers_to_buy))
+
+            # sort by prediction (descending) and take the 'top_x_elements_to_select'.
+            # out of them 'possible_buy_trades' are selected randomly
+            buy_candidates = tickers_to_buy_predictions.sort_values('prediction', ascending=False).ticker[:top_x_elements_to_select].to_list()
+            tickers_to_buy = random.choices(buy_candidates, k=possible_buy_trades)
+
+        for ticker in tickers_to_buy:
+            self.portfolio.add_buy_trade(ticker, self.current_trading_day)
 
     def _advance_time(self):
         current_friday = self.start_friday + pd.DateOffset(self.step_counter * 7)

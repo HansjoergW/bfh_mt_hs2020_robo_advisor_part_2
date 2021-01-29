@@ -90,6 +90,16 @@ def test_on_empty():
     assert (portfolio_flow.total_current == 10000).all()
 
 
+def test_number_of_possible_buy_trades():
+    portfolio = Portfolio(universe, 9_999)
+    assert portfolio.number_of_possible_buy_trades_based_on_cash() == 1
+
+    portfolio = Portfolio(universe, 2_500)
+    assert portfolio.number_of_possible_buy_trades_based_on_cash() == 0
+
+    portfolio = Portfolio(universe, 100_000)
+    assert portfolio.number_of_possible_buy_trades_based_on_cash() == 20
+
 
 
 

@@ -78,3 +78,67 @@ def test_calculate_reward():
     assert env._calculate_reward(2, 2) == 0.0
     assert env._calculate_reward(3, 2) == 0.5
 
+
+def test_execute_actions():
+    env = RoboAdvisorEnvV10(universe)
+    env.reset()
+
+    zero_list = [0] * len(universe.get_companies())
+
+    env._execute_actions(zero_list)
+    assert len(env.portfolio.trading_book) == 0
+    assert len(env.portfolio.cash_book) == 1
+
+    buy_list = zero_list.copy()
+    buy_list[0:2] = [1,1]
+
+    env._execute_actions(buy_list)
+    assert len(env.portfolio.trading_book) == 2
+    assert len(env.portfolio.cash_book) == 5
+
+    # next, we only have cash to buy one
+    # moreover, 'buy' suggestions include 2 tickers that were bought in the prior step
+    env.portfolio.current_cash = 5000.0
+    buy_list = zero_list.copy()
+    buy_list[0:4] = [1, 1, 1, 1]
+    # so we expect that only one candidate will be bought
+    env._execute_actions(buy_list)
+
+    # an addtional buy trade has to be added
+    assert len(env.portfolio.trading_book) == 3
+    assert len(env.portfolio.cash_book) == 7
+
+
+    # next, we only have cash to buy one
+    # moreover, 'buy' suggestions include 2 tickers that were bought in the prior step
+    env.portfolio.current_cash = 10000.0
+    buy_list = zero_list.copy()
+    buy_list[0:30] = [1] * 30
+
+    # so we expect that only two out of 30 candidate will be bought
+    env._execute_actions(buy_list)
+
+    # two addtional buy trades have to be added
+    assert len(env.portfolio.trading_book) == 5
+    assert len(env.portfolio.cash_book) == 11
+
+
+    # next we set cash to zero and sell a few titles
+    env._advance_time()
+    env.portfolio.current_cash = 0.0
+
+    # we know that we bought the first to titles and one out of third and fourth
+    # so we 'sell' all the first four titles which should result in 3 sold titles
+    # with the new money in the cashbook, we again try to buy stocks
+    sell_buy_list = zero_list.copy()
+    sell_buy_list[0:30] = [1] * 30
+    sell_buy_list[0:4] = [2] * 4
+
+    # so we expect that only two out of 30 candidate will be bought
+    env._execute_actions(sell_buy_list)
+
+    # two addtional buy trades have to be added
+    assert len(env.portfolio.trading_book) > 8
+    assert len(env.portfolio.cash_book) > 17
+
+
