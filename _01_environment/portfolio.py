@@ -134,6 +134,10 @@ class Portfolio():
             'type', 'ticker', 'date', 'cost', 'price', 'potential', 'prediction', 'shares', 'amount'
         ])
 
+
+    # The following method recalculate the whole situation based and the trading_book and cash book
+    # and can be used to recalculate the situation for any point in time.
+    # the previous get_current.. x method just return the situation at the "current" situation
     def get_positions(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> pd.DataFrame:
         """ returns the current positions at a specific date"""
 

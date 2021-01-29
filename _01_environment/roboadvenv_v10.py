@@ -19,14 +19,20 @@ REWARD_AVERAGE_COUNT = 3
 
 class RoboAdvisorEnvV10(gym.Env):
 
-    def __init__(self, universe : InvestUniverse, reward_average_count: int = REWARD_AVERAGE_COUNT,
-                 start_cash: float = 100_000.0):
+    def __init__(self, universe : InvestUniverse,
+                    reward_average_count: int = REWARD_AVERAGE_COUNT,
+                    start_cash: float = 100_000.0,
+                    trading_cost: float = 40.0,
+                    buy_volume: float = 5_000.0):
         super(RoboAdvisorEnvV10, self).__init__()
 
         self.universe = universe
         self.trading_days_ser = pd.Series(self.universe.get_trading_days())
-        self.start_cash = start_cash
         self.reward_average_count = reward_average_count
+
+        self.portfolio_start_cash = start_cash
+        self.portfolio_trading_cost = trading_cost
+        self.portfolio_buy_volume = buy_volume
 
         self.step_counter = 0
         self.is_done = False
@@ -58,7 +64,8 @@ class RoboAdvisorEnvV10(gym.Env):
     def reset(self):
         self.step_counter = 0
         self.is_done = False
-        self.portfolio = Portfolio(self.universe, self.start_cash)
+        self.portfolio = Portfolio(self.universe, self.portfolio_start_cash,
+                                   self.portfolio_trading_cost, self.portfolio_buy_volume)
         self._advance_time()
 
         return self._calculate_state(self.current_evaluation_day)
