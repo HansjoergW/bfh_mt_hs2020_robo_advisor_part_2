@@ -24,6 +24,7 @@ class Portfolio():
         self.current_cash = float(cash)
         self.trading_cost = trading_cost
         self.buy_volume = buy_volume
+        self.current_positions = {}
 
         self.trading_book: List[Dict] = []
         self.cash_book: List[Dict] = []
@@ -57,6 +58,7 @@ class Portfolio():
 
         self.trading_book.append(entry_dict)
         self._recalculate_cash(entry_dict)
+        self.current_positions[ticker] = entry_dict
 
     def add_sell_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a sell trade to the book. """
@@ -66,7 +68,7 @@ class Portfolio():
         data_dict = self.universe.get_data(ticker, date)
 
         # we always sell the whole position
-        shares = self.get_positions(date).loc[ticker].shares
+        shares = self.current_positions[ticker].shares
 
         entry_dict = {
             'type': TradeType.SELL,
@@ -82,6 +84,7 @@ class Portfolio():
 
         self.trading_book.append(entry_dict)
         self._recalculate_cash(entry_dict)
+        del self.current_positions[ticker]
 
     def _recalculate_cash(self, trade: Dict):
         """ recalculates the current cash position after the trade. Also adds the appropriate entries in the cash book. """
@@ -100,6 +103,31 @@ class Portfolio():
             "date": trade['date'],
             "amount": -trade['cost']
         })
+
+    def get_current_positions(self) -> pd.DataFrame:
+        if len(self.current_positions) == 0:
+            return pd.DataFrame(columns = ['shares', 'buy_prediction', 'buy_price', 'buy_date'])
+
+        positions_pd = pd.DataFrame(self.current_positions.values, columns=[
+            'type', 'ticker', 'date', 'cost', 'price', 'potential', 'prediction', 'shares', 'amount'
+        ])
+
+        positions_pd = positions_pd[['ticker', 'prediction', 'price', 'date']]
+        positions_pd.columns = ['ticker', 'buy_prediction', 'buy_price', 'buy_date']
+        positions_pd.set_index('ticker', inplace=True)
+
+        return positions_pd
+
+    def get_current_evaluation(self, date: Timestamp):
+        current_tickers = list(self.current_positions.keys())
+        current_position_value = 0.0
+        if len(current_tickers) > 0:
+            close_values = self.universe.get_close_for_per(current_tickers, date)
+            current_close = close_values.set_index('ticker').T.to_dict()
+            current_position_value = sum([self.current_positions[x]['shares'] *
+                                          current_close[x]['Close'] for x in current_tickers])
+
+        return current_position_value + self.current_cash
 
     def _get_trading_book_bd(self):
         return pd.DataFrame(self.trading_book, columns=[

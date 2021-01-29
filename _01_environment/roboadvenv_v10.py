@@ -83,7 +83,8 @@ class RoboAdvisorEnvV10(gym.Env):
         state = self._calculate_state(self.current_evaluation_day)
 
         # get the performance
-        self.current_value_holder[self.step_counter] = self.portfolio.get_evaluation(self.current_evaluation_day)
+        self.current_value_holder[self.step_counter] = \
+            self.portfolio.get_current_evaluation(self.current_evaluation_day)
 
         # the reward is the average gain over the last 'reward_average_count' steps.
         # by using the average we hope to smooth it and make the training more stable
@@ -102,7 +103,7 @@ class RoboAdvisorEnvV10(gym.Env):
         action_pd = pd.concat([self.sorted_companies_ser, action_ser], axis= 1)
         action_pd.set_index('ticker', inplace= True)
 
-        positions = self.portfolio.get_positions(self.current_trading_day)
+        positions = self.portfolio.get_current_positions()
 
         # first: execute sell action - we can only sell shares we own
         to_sell = pd.merge(action_pd[action_pd.action == 2], positions, left_index=True, right_index=True)
@@ -190,7 +191,7 @@ class RoboAdvisorEnvV10(gym.Env):
         current_values.set_index('ticker', inplace=True)
 
         # returns index:ticker ['shares', 'buy_prediction', 'buy_price', 'buy_date']
-        current_positions = self.portfolio.get_positions(date)
+        current_positions = self.portfolio.get_current_positions()
 
         merged = pd.merge(current_values, current_positions, how="left", left_index=True, right_index=True)
 

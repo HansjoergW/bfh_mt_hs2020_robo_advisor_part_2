@@ -39,8 +39,10 @@ def test_buy_trade():
 
     evaluate_date = pd.to_datetime("2017-01-31")
     value = portfolio.get_evaluation(evaluate_date)
+    value_cur = portfolio.get_current_evaluation(evaluate_date)
 
     assert int(round(value)) == 10341
+    assert int(round(value_cur)) == 10341
 
     portfolio_flow = portfolio.get_portfolio_flow()
     assert int(round(portfolio_flow.loc[evaluate_date].total_current)) == 10341
