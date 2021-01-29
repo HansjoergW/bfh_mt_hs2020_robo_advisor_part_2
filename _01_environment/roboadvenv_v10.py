@@ -40,16 +40,15 @@ class RoboAdvisorEnvV10(gym.Env):
         # first friday in 2017
         self.start_friday = pd.to_datetime("2017-01-06")
 
-        self.portfolio: Union[Portfolio, None] = None
 
         nr_of_companies = len(self.universe.get_companies())
         self.sorted_companies = list(self.universe.get_companies())
         self.sorted_companies.sort()
         self.sorted_companies_ser = pd.Series(self.sorted_companies,  name='ticker')
 
-        # numpy array to hold the current value at every step
-        # the size is large enough so that we could use a step-size of one day
-        self.current_value_holder = np.zeros(len(self.trading_days_ser))
+        # initialized with the real size in reset()
+        self.current_value_holder = np.zeros(1)
+        self.portfolio: Union[Portfolio, None] = None
 
         # bounds based on the data we will prepare
         # we have 5 values per company: 'prediction', 'prediction_change', 'holding_days', 'price_change', 'portion'
@@ -62,6 +61,12 @@ class RoboAdvisorEnvV10(gym.Env):
         self.zero_state = np.zeros((nr_of_companies, 5), dtype = np.float32)
 
     def reset(self):
+        print("start episode")
+        # numpy array to hold the current value at every step
+        # the size is large enough so that we could use a step-size of one day
+        self.current_value_holder = np.zeros(len(self.trading_days_ser))
+        self.current_value_holder[0] = self.portfolio_start_cash
+
         self.step_counter = 0
         self.is_done = False
         self.portfolio = Portfolio(self.universe, self.portfolio_start_cash,
@@ -92,6 +97,8 @@ class RoboAdvisorEnvV10(gym.Env):
         # get the performance
         self.current_value_holder[self.step_counter] = \
             self.portfolio.get_current_evaluation(self.current_evaluation_day)
+
+        assert int(self.current_value_holder[self.step_counter]) == int (self.portfolio.get_evaluation(self.current_evaluation_day))
 
         # the reward is the average gain over the last 'reward_average_count' steps.
         # by using the average we hope to smooth it and make the training more stable
@@ -144,12 +151,13 @@ class RoboAdvisorEnvV10(gym.Env):
             # sort by prediction (descending) and take the 'top_x_elements_to_select'.
             # out of them 'possible_buy_trades' are selected randomly
             buy_candidates = tickers_to_buy_predictions.sort_values('prediction', ascending=False).ticker[:top_x_elements_to_select].to_list()
-            tickers_to_buy = random.choices(buy_candidates, k=possible_buy_trades)
+            tickers_to_buy = random.sample(buy_candidates, k=possible_buy_trades)
 
         for ticker in tickers_to_buy:
             self.portfolio.add_buy_trade(ticker, self.current_trading_day)
 
     def _advance_time(self):
+        print(".", end="")
         current_friday = self.start_friday + pd.DateOffset(self.step_counter * 7)
 
         # generally, we evaluate the situation on  a Friday evening, resp. over the weekend. So we have to find the last
@@ -165,7 +173,7 @@ class RoboAdvisorEnvV10(gym.Env):
         # or if the current value is less than 20% of the start_value
 
         end_of_period = pd.isnull(self.current_trading_day)
-        out_of_money = current_value < 0.3 * self.start_cash
+        out_of_money = current_value < (0.3 * self.portfolio_start_cash)
 
         return end_of_period | out_of_money
 

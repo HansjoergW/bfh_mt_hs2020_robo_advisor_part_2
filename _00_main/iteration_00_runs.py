@@ -17,7 +17,7 @@ HYPERPARAMS = {
         'env_buy_volumne'             : 5_000.0,  # amount for which stocks are bought in buy trade
 
         # agent
-        'agent_device'                    : "cpu",    # cpu or cuda
+        'agent_device'                    : "cuda",   # cpu or cuda
         'agent_gamma_exp'                 : 0.9,      # discount_factor for experience_first_last.. shouldn't matter since step_size is only 1
         'agent_buffer_size'               : 50_000,   # size of replay buffer
         'agent_target_net_sync'           : 1000,     # sync TargetNet with weights of DNN every .. iterations

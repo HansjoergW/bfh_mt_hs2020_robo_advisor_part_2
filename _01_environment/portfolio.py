@@ -68,7 +68,7 @@ class Portfolio():
         data_dict = self.universe.get_data(ticker, date)
 
         # we always sell the whole position
-        shares = self.current_positions[ticker].shares
+        shares = self.current_positions[ticker]['shares']
 
         entry_dict = {
             'type': TradeType.SELL,
@@ -108,12 +108,12 @@ class Portfolio():
         if len(self.current_positions) == 0:
             return pd.DataFrame(columns = ['shares', 'buy_prediction', 'buy_price', 'buy_date'])
 
-        positions_pd = pd.DataFrame(self.current_positions.values, columns=[
+        positions_pd = pd.DataFrame(list(self.current_positions.values()), columns=[
             'type', 'ticker', 'date', 'cost', 'price', 'potential', 'prediction', 'shares', 'amount'
         ])
 
-        positions_pd = positions_pd[['ticker', 'prediction', 'price', 'date']]
-        positions_pd.columns = ['ticker', 'buy_prediction', 'buy_price', 'buy_date']
+        positions_pd = positions_pd[['ticker', 'shares', 'prediction', 'price', 'date']]
+        positions_pd.columns = ['ticker', 'shares', 'buy_prediction', 'buy_price', 'buy_date']
         positions_pd.set_index('ticker', inplace=True)
 
         return positions_pd
