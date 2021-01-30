@@ -127,10 +127,10 @@ class Portfolio():
         current_tickers = list(self.current_positions.keys())
         current_position_value = 0.0
         if len(current_tickers) > 0:
-            close_values = self.universe.get_close_for_per(current_tickers, date)
-            current_close = close_values.set_index('ticker').T.to_dict()
+            close_values = self.universe.get_data_per_direct(date)
+            current_close = close_values['Close'].T.to_dict()
             current_position_value = sum([self.current_positions[x]['shares'] *
-                                          current_close[x]['Close'] for x in current_tickers])
+                                          current_close[x] for x in current_tickers])
 
         return current_position_value + self.current_cash
 

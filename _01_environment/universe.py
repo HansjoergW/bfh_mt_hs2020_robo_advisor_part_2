@@ -42,6 +42,9 @@ class InvestUniverse():
         """ searches the last trading day before the provided date if the date is not a trading day."""
         return self.trading_days[self.trading_days <= date].max()
 
+    def get_data_per_direct(self, date: Timestamp) -> pd.DataFrame:
+        return self.data.loc[date]
+
     def get_close_for_per(self, tickers: List[str], date: Timestamp) -> pd.DataFrame:
         """ get the close prices for all provided tickers for a specific date. """
         date_date = self.data.loc[date]
@@ -52,7 +55,7 @@ class InvestUniverse():
         return self.data.loc[self.data.index.isin(tickers, level=1)][['Date','ticker','Close']].reset_index(drop=True)
 
     def get_data_per(self, date: Timestamp, cols: List[str]) -> pd.DataFrame:
-        return self.data.loc[date][cols].copy().reset_index(drop=True)
+        return self.data.loc[date][cols].reset_index(drop=True)
 
 
     @staticmethod
