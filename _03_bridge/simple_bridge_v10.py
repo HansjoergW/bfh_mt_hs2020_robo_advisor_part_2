@@ -16,14 +16,18 @@ class SimpleBridgeV10(BridgeBase):
 
     def __init__(self,
                  agent: AgentBase,
+                 output_actions: int = 497,
+                 output_action_states: int = 3,
                  optimizer: Optimizer = None,
                  learning_rate: float = 0.0001,
                  gamma: float = 0.9,
                  initial_population: int = 1000,
-                 batch_size: int = 32):
+                 batch_size: int = 32
+                 ):
 
         super(SimpleBridgeV10, self).__init__(agent, optimizer, learning_rate, gamma, initial_population, batch_size)
-
+        self.output_actions = output_actions
+        self.output_action_states = output_action_states
 
     def get_sample(self):
         return self.agent.buffer.sample(self.batch_size)
@@ -55,12 +59,14 @@ class SimpleBridgeV10(BridgeBase):
         done_mask     = torch.BoolTensor(dones).to(self.device)
 
         actions_v         = actions_v.unsqueeze(-1)
-        state_action_vals = self.agent.net(states_v).gather(1, actions_v)
+        state_action_vals = self.agent.net(states_v).view(-1, self.output_actions, self.output_action_states).gather(1, actions_v)
         state_action_vals = state_action_vals.squeeze(-1)
 
         with torch.no_grad():
-            next_state_vals            = self.agent.tgt_net.target_model(next_states_v).max(1)[0]
-            next_state_vals[done_mask] = 0.0
+            next_state_vals            = self.agent.tgt_net.target_model(next_states_v)\
+                                            .view(-1, self.output_actions, self.output_action_states).max(2)[0]
+            next_state_vals[done_mask] = torch.zeros(self.output_actions, device=self.device)
 
-        bellman_vals = next_state_vals.detach() * self.gamma + rewards_v
-        return nn.MSELoss()(state_action_vals, bellman_vals)
+        bellman_vals = next_state_vals.detach().sum(1) * self.gamma + rewards_v
+        state_action_vals_sum = state_action_vals.sum(1)
+        return nn.MSELoss()(state_action_vals_sum, bellman_vals)

@@ -33,26 +33,32 @@ class LoopControlV10(LoopControlBase):
             reward = trainer.state.metrics['reward']
             steps = trainer.state.metrics['steps']
 
-            value = self.bridge.agent.env.get_current_value()
+            profit_loss = self.bridge.agent.env.last_profit_loss
+            sell_trades = self.bridge.agent.env.last_count_sell_trades
+            buy_trades = self.bridge.agent.env.last_count_buy_trades
+            pl_percent = profit_loss / self.bridge.agent.env.portfolio_start_cash
 
-            trainer.state.metrics['value'] = value
+            trainer.state.metrics['profit_loss'] = profit_loss
+            trainer.state.metrics['sell_trades'] = sell_trades
+            trainer.state.metrics['buy_trades'] = buy_trades
+            trainer.state.metrics['PL_percent'] = pl_percent
 
             update_smoothed_metrics(0.98, trainer,
-                                    ('avg_reward', 'avg_steps', 'avg_value'),
-                                    (reward, steps, value))
+                                    ('avg_reward', 'avg_steps', 'avg_profit_loss', 'avg_PL_percent','avg_sell_trades', 'avg_buy_trades'),
+                                    (reward, steps, profit_loss, pl_percent, sell_trades, buy_trades))
 
         @self.engine.on(EpisodeEvents.BOUND_REWARD_REACHED)
         def game_solved(trainer: Engine):
             self.game_solved_basic(trainer)
 
         if self.logtb:
-            handler = OutputHandler(tag="episodes", metric_names=['reward', 'steps', 'avg_reward'])
+            handler = OutputHandler(tag="episodes", metric_names=['reward', 'avg_reward'])
             self.tblogger.attach(self.engine, log_handler=handler, event_name=EpisodeEvents.EPISODE_COMPLETED)
 
-            handler = OutputHandler(tag="episodes2", metric_names=['value'])
+            handler = OutputHandler(tag="trading", metric_names=['profit_loss', 'PL_percent','sell_trades', 'buy_trades'])
             self.tblogger.attach(self.engine, log_handler=handler, event_name=EpisodeEvents.EPISODE_COMPLETED)
 
-            handler = OutputHandler(tag="episodes3", metric_names=['avg_value'])
+            handler = OutputHandler(tag="avg_trading", metric_names=['avg_profit_loss', 'avg_PL_percent', 'avg_sell_trades', 'avg_buy_trades'])
             self.tblogger.attach(self.engine, log_handler=handler, event_name=EpisodeEvents.EPISODE_COMPLETED)
 
             handler = OutputHandler(tag="train", metric_names=['avg_loss'], output_transform=lambda a: a)

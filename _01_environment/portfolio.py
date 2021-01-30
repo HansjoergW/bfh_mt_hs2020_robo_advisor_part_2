@@ -29,6 +29,9 @@ class Portfolio():
         self.trading_book: List[Dict] = []
         self.cash_book: List[Dict] = []
 
+        self.sell_trades = 0
+        self.buy_trades = 0
+
         start_date = self.universe.get_trading_days()[0]
         self.cash_book.append({"date": start_date, "amount": cash, "what": "cash_start"})
 
@@ -37,6 +40,7 @@ class Portfolio():
 
     def add_buy_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a buy trade to the book. """
+        self.buy_trades += 1
         if trading_cost is None:
             trading_cost = self.trading_cost
 
@@ -62,6 +66,7 @@ class Portfolio():
 
     def add_sell_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a sell trade to the book. """
+        self.sell_trades += 1
         if trading_cost is None:
             trading_cost = self.trading_cost
 

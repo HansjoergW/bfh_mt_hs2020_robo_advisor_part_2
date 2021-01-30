@@ -55,12 +55,11 @@ class LoopControlBase(ABC):
 
     def episode_completed_basic(self,trainer: Engine):
         passed = trainer.state.metrics.get('time_passed', 0)
-        print("Episode %d: reward=%.0f, steps=%s, distance=%.1f, usedenergy=%.1f, "
+        print("Episode %d: reward=%.0f, steps=%s, value=%.1f, "
               "elapsed=%s" % (
                   trainer.state.episode, trainer.state.episode_reward,
                   trainer.state.episode_steps,
-                  self.bridge.agent.env.last_currentposition,
-                  self.bridge.agent.env.last_usedenergy,
+                  self.bridge.agent.env.last_profit_loss(),
                   timedelta(seconds=int(passed))))
 
     def game_solved_basic(self,trainer: Engine):

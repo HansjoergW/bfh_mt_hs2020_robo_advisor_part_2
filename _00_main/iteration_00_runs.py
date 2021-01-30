@@ -11,7 +11,7 @@ HYPERPARAMS = {
     'base_setup': SimpleNamespace(**{
 
         # env
-        'env_reward_average_count'    : 3,        # steps over which the reward is averaged
+        'env_reward_average_count'    : 1,        # steps over which the reward is averaged
         'env_start_cash'              : 100_000.0,# initial cash position
         'env_trading_cost'            : 40.0,     # costs per sell and buy trade
         'env_buy_volumne'             : 5_000.0,  # amount for which stocks are bought in buy trade
@@ -67,11 +67,13 @@ def create_control(params: SimpleNamespace, config_name) -> LoopControlV10:
                            )
 
     bridge = SimpleBridgeV10(agent=agent,
-                             optimizer          = params.bridge_optimizer,
-                             learning_rate      = params.bridge_learning_rate,
-                             gamma              = params.bridge_gamma,
-                             initial_population = params.bridge_initial_population,
-                             batch_size         = params.bridge_batch_size,
+                             output_actions       = len(universe.get_companies()),
+                             output_action_states = 3,
+                             optimizer            = params.bridge_optimizer,
+                             learning_rate        = params.bridge_learning_rate,
+                             gamma                = params.bridge_gamma,
+                             initial_population   = params.bridge_initial_population,
+                             batch_size           = params.bridge_batch_size,
                              )
 
 

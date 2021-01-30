@@ -60,7 +60,17 @@ class RoboAdvisorEnvV10(gym.Env):
 
         self.zero_state = np.zeros((nr_of_companies, 5), dtype = np.float32)
 
+        self.last_profit_loss = 0
+        self.last_count_buy_trades = 0
+        self.last_count_sell_trades = 0
+
     def reset(self):
+
+        if self.portfolio:
+            self.last_profit_loss = self.current_value_holder[self.step_counter] - self.portfolio_start_cash
+            self.last_count_buy_trades = self.portfolio.buy_trades
+            self.last_count_sell_trades = self.portfolio.sell_trades
+
         print("\nstart episode", end="")
         # numpy array to hold the current value at every step
         # the size is large enough so that we could use a step-size of one day

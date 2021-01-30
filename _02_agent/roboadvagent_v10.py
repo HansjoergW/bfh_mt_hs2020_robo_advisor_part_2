@@ -14,7 +14,7 @@ class RAActionSelector(ptan.actions.ActionSelector):
 
     def __call__(self, scores):
         assert isinstance(scores, np.ndarray)
-        return np.argmax(scores, axis=2).astype(np.int8)
+        return np.argmax(scores, axis=2).astype(np.int64)
 
 
 class RAEpsilonGreedyActionSelector():
