@@ -40,6 +40,40 @@ HYPERPARAMS = {
         # loop control
         'loop_bound_avg_reward'       : 200_000.0,# target avg reward
         'loop_logtb'                  : True,     # Log to Tensorboard Logfile
+    }),
+
+    'dueling_net': SimpleNamespace(**{
+
+        # env
+        'env_reward_average_count'    : 1,        # steps over which the reward is averaged
+        'env_start_cash'              : 100_000.0,# initial cash position
+        'env_trading_cost'            : 40.0,     # costs per sell and buy trade
+        'env_buy_volumne'             : 5_000.0,  # amount for which stocks are bought in buy trade
+
+        # agent
+        'agent_device'                    : "cuda",   # cpu or cuda
+        'agent_gamma_exp'                 : 0.9,      # discount_factor for experience_first_last.. shouldn't matter since step_size is only 1
+        'agent_buffer_size'               : 50_000,   # size of replay buffer
+        'agent_target_net_sync'           : 1000,     # sync TargetNet with weights of DNN every .. iterations
+        'agent_simple_eps_start'          : 1.0,      # simpleagent: epsilon start
+        'agent_simple_eps_final'          : 0.02,     # simpleagent: epsilon end
+        'agent_simple_eps_frames'         : 10**5,    # simpleagent: epsilon frames -> how many frames until 0.02 should be reached .. decay is linear
+        'agent_hidden_size'               : 2000,     # how many nodes are in the hidden layer
+        'agent_hidden_layers'             : 2,        # how many layers shall the hidden layer have
+        'agent_dueling_network'           : True,    # shall a dueling  net be used
+        'agent_steps_count'               : 1,        # how many steps shall be used between training
+        'agent_use_combined_replay_buffer': True,     # shall a combined_replay_buffer be used
+
+        # bridge
+        'bridge_optimizer'            : None,     # Optimizer -> default ist Adam
+        'bridge_learning_rate'        : 0.0001,   # learningrate
+        'bridge_gamma'                : 0.9,      # discount_factor for reward
+        'bridge_initial_population'   : 200,     # initial number of experiences in buffer
+        'bridge_batch_size'           : 32,       # batch_size for training
+
+        # loop control
+        'loop_bound_avg_reward'       : 200_000.0,# target avg reward
+        'loop_logtb'                  : True,     # Log to Tensorboard Logfile
     })
 }
 
@@ -94,4 +128,5 @@ def run_example(config_name: str):
     control.run()
 
 if __name__ == '__main__':
-    run_example('base_setup')
+    #run_example('base_setup')
+    run_example('dueling_net')

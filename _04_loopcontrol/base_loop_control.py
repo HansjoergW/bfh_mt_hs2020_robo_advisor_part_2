@@ -59,7 +59,7 @@ class LoopControlBase(ABC):
               "elapsed=%s" % (
                   trainer.state.episode, trainer.state.episode_reward,
                   trainer.state.episode_steps,
-                  self.bridge.agent.env.last_profit_loss(),
+                  self.bridge.agent.env.last_profit_loss,
                   timedelta(seconds=int(passed))))
 
     def game_solved_basic(self,trainer: Engine):
