@@ -65,6 +65,10 @@ class InvestUniverse():
         df['day_of_week'] = df.Date.dt.dayofweek
         df['mid_price'] = (df.High + df.Low) / 2
 
+        # there are companies in the data which were not listed from the beginning
+        # this entries will have an 'nan' as prediction (for instance DOW or CCC)
+        df.prediction.fillna(0, inplace=True)
+
         df['i_date'] = df.Date
         df['i_ticker'] = df.ticker
         df.set_index(['i_date', 'i_ticker'], inplace=True)

@@ -236,10 +236,6 @@ class RoboAdvisorEnvV10(gym.Env):
         merged.prediction_change.fillna(0, inplace=True)
         merged.portion.fillna(0, inplace=True)
 
-        # there are companies in the data which were not listed from the beginning
-        # this entries will have an 'nan' as prediction (for instance DOW or CCC)
-        merged.prediction.fillna(0, inplace=True)
-
         # only the following columns are needed as input for the agent. more over, we always have to use the same order
         merged = merged[['prediction', 'prediction_change', 'holding_days', 'price_change', 'portion']].sort_index()
 
