@@ -44,7 +44,7 @@ def test_buy_trade():
     assert int(round(value)) == 10341
     assert int(round(value_cur)) == 10341
 
-    portfolio_flow = portfolio.get_portfolio_flow()
+    portfolio_flow = portfolio.get_total_flow()
     assert int(round(portfolio_flow.loc[evaluate_date].total_current)) == 10341
 
 
@@ -67,7 +67,7 @@ def test_buy_and_sell_trade():
     value = portfolio.get_evaluation(sell_date)
     assert int(round(value)) == 12517
 
-    portfolio_flow = portfolio.get_portfolio_flow()
+    portfolio_flow = portfolio.get_total_flow()
     assert int(round(portfolio_flow.loc[sell_date].total_current)) == 12517
 
 
@@ -87,7 +87,7 @@ def test_on_empty():
     portfolio_flow_per_title = portfolio.get_portfolio_flow_per_title()
     assert portfolio_flow_per_title.shape[0] == 0
 
-    portfolio_flow = portfolio.get_portfolio_flow()
+    portfolio_flow = portfolio.get_total_flow()
     assert portfolio_flow.shape[0] == universe.get_trading_days().shape[0]
     assert (portfolio_flow.total_current == 10000).all()
 

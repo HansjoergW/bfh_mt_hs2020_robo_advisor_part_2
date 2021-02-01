@@ -10,6 +10,10 @@ def test_init():
     assert len(universe.get_trading_days()) > 100
 
 
+def test_get_average_gain():
+    print(universe.get_average_gain())
+
+
 def test_get_data():
     a_date = pd.to_datetime('2017-01-04')
     ticker = 'AAPL'

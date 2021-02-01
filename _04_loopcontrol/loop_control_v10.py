@@ -37,6 +37,7 @@ class LoopControlV10(LoopControlBase):
             sell_trades = self.bridge.agent.env.last_count_sell_trades
             buy_trades = self.bridge.agent.env.last_count_buy_trades
             pl_percent = profit_loss / self.bridge.agent.env.portfolio_start_cash
+            avg_held_days = self.bridge.agent.env.last_avg_held_days
 
             trainer.state.metrics['profit_loss'] = profit_loss
             trainer.state.metrics['sell_trades'] = sell_trades

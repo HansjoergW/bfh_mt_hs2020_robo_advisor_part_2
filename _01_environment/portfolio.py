@@ -34,9 +34,13 @@ class Portfolio():
 
         start_date = self.universe.get_trading_days()[0]
         self.cash_book.append({"date": start_date, "amount": cash, "what": "cash_start"})
+        self.total_held_days = 0
 
     def number_of_possible_buy_trades_based_on_cash(self):
         return int(self.current_cash / self.buy_volume)
+
+    def get_average_held_day(self):
+        return self.total_held_days / self.sell_trades
 
     def add_buy_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a buy trade to the book. """
@@ -74,6 +78,7 @@ class Portfolio():
 
         # we always sell the whole position
         shares = self.current_positions[ticker]['shares']
+        buy_date = self.current_positions[ticker]['date']
 
         entry_dict = {
             'type': TradeType.SELL,
@@ -89,6 +94,7 @@ class Portfolio():
 
         self.trading_book.append(entry_dict)
         self._recalculate_cash(entry_dict)
+        self.total_held_days += (date - buy_date).days
         del self.current_positions[ticker]
 
     def _recalculate_cash(self, trade: Dict):
@@ -110,6 +116,7 @@ class Portfolio():
         })
 
     def get_current_positions(self) -> pd.DataFrame:
+        """returns the current held  positions in the portfolio."""
         if len(self.current_positions) == 0:
             return pd.DataFrame(columns = ['shares', 'buy_prediction', 'buy_price', 'buy_date'])
 
@@ -124,6 +131,7 @@ class Portfolio():
         return positions_pd
 
     def get_current_evaluation(self, date: Timestamp):
+        """returns the current value of the cash and the positions in the portfolio """
         current_tickers = list(self.current_positions.keys())
         current_position_value = 0.0
         if len(current_tickers) > 0:
@@ -140,9 +148,10 @@ class Portfolio():
         ])
 
 
-    # The following method recalculate the whole situation based and the trading_book and cash book
+    # The following methods recalculate the whole situation based and the trading_book and cash book
     # and can be used to recalculate the situation for any point in time.
     # the previous get_current.. x method just return the situation at the "current" situation
+
     def get_positions(self, date: Timestamp = pd.to_datetime("2100-01-01")) -> pd.DataFrame:
         """ returns the current positions at a specific date"""
 
@@ -248,7 +257,7 @@ class Portfolio():
 
         return merged[['ticker', 'shares_current', 'value_current']]
 
-    def get_portfolio_flow(self) -> pd.DataFrame:
+    def get_total_flow(self) -> pd.DataFrame:
         """
         Summarizes the whole portfolio flow which consist of cash and stock positions for the whole period.
         """

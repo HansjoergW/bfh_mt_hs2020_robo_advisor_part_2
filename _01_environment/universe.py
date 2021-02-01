@@ -57,6 +57,17 @@ class InvestUniverse():
     def get_data_per(self, date: Timestamp, cols: List[str]) -> pd.DataFrame:
         return self.data.loc[date][cols].reset_index(drop=True)
 
+    def get_average_gain(self):
+        """ returns the average gain over the whole period and the average annualized gain"""
+        min_date = self.trading_days.min()
+        max_date = self.trading_days.max()
+
+        diff = (max_date - min_date).days
+
+        gain =  (self.data.loc[max_date].Close / self.data.loc[min_date].Close).mean() - 1
+        gain_p_year = (gain + 1)**(1 / (diff/365)) - 1
+        return gain, gain_p_year
+
 
     @staticmethod
     def _load_data():

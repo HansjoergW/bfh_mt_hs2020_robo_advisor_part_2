@@ -63,6 +63,7 @@ class RoboAdvisorEnvV10(gym.Env):
         self.last_profit_loss = 0
         self.last_count_buy_trades = 0
         self.last_count_sell_trades = 0
+        self.last_avg_held_days = 0
 
     def reset(self):
 
@@ -70,6 +71,7 @@ class RoboAdvisorEnvV10(gym.Env):
             self.last_profit_loss = self.current_value_holder[self.step_counter] - self.portfolio_start_cash
             self.last_count_buy_trades = self.portfolio.buy_trades
             self.last_count_sell_trades = self.portfolio.sell_trades
+            self.last_avg_held_days = self.portfolio.get_average_held_day()
 
         print("\nstart episode", end="")
         # numpy array to hold the current value at every step
