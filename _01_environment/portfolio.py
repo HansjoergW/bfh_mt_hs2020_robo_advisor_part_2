@@ -18,12 +18,13 @@ class Portfolio():
     """ manages the portfolio. keeps track of cash and trading actions.
     """
 
-    def __init__(self, universe: InvestUniverse, cash: float, trading_cost: float = 40.0, buy_volume: float = 5000.0):
+    def __init__(self, universe: InvestUniverse, cash: float, trading_cost: float = 40.0, buy_volume: float = 5000.0, proportional_buy_volume: bool  = False):
         self.universe = universe
         self.start_cash = float(cash)
         self.current_cash = float(cash)
         self.trading_cost = trading_cost
         self.buy_volume = buy_volume
+        self.proportional_buy_volume = proportional_buy_volume
         self.current_positions = {}
 
         self.trading_book: List[Dict] = []
@@ -35,12 +36,17 @@ class Portfolio():
         start_date = self.universe.get_trading_days()[0]
         self.cash_book.append({"date": start_date, "amount": cash, "what": "cash_start"})
         self.total_held_days = 0
+        self.total_gain = 0
+        self.buy_volume_factor = cash / buy_volume
 
     def number_of_possible_buy_trades_based_on_cash(self):
         return int(self.current_cash / self.buy_volume)
 
     def get_average_held_day(self):
         return self.total_held_days / self.sell_trades
+
+    def get_average_gain(self):
+        return self.total_gain / self.sell_trades
 
     def add_buy_trade(self, ticker: str, date: Timestamp, trading_cost: float = None):
         """ adds a buy trade to the book. """
@@ -79,6 +85,7 @@ class Portfolio():
         # we always sell the whole position
         shares = self.current_positions[ticker]['shares']
         buy_date = self.current_positions[ticker]['date']
+        buy_price = self.current_positions[ticker]['price']
 
         entry_dict = {
             'type': TradeType.SELL,
@@ -95,6 +102,7 @@ class Portfolio():
         self.trading_book.append(entry_dict)
         self._recalculate_cash(entry_dict)
         self.total_held_days += (date - buy_date).days
+        self.total_gain += entry_dict['price'] / buy_price - 1
         del self.current_positions[ticker]
 
     def _recalculate_cash(self, trade: Dict):
@@ -140,7 +148,12 @@ class Portfolio():
             current_position_value = sum([self.current_positions[x]['shares'] *
                                           current_close[x] for x in current_tickers])
 
-        return current_position_value + self.current_cash
+        current_value =  current_position_value + self.current_cash
+
+        if self.proportional_buy_volume:
+            self.buy_volume = round(current_value / self.buy_volume_factor, -3) # round to nearest 1000
+
+        return current_value
 
     def _get_trading_book_bd(self):
         return pd.DataFrame(self.trading_book, columns=[

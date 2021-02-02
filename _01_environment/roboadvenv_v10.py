@@ -23,16 +23,20 @@ class RoboAdvisorEnvV10(gym.Env):
                     reward_average_count: int = REWARD_AVERAGE_COUNT,
                     start_cash: float = 100_000.0,
                     trading_cost: float = 40.0,
-                    buy_volume: float = 5_000.0):
+                    buy_volume: float = 5_000.0,
+                    proportional_buy_volume: bool = False):
         super(RoboAdvisorEnvV10, self).__init__()
 
         self.universe = universe
         self.trading_days_ser = pd.Series(self.universe.get_trading_days())
         self.reward_average_count = reward_average_count
+        self.total_over_sell = 0 # total number of sell actions without holding stock
+        self.total_over_buy = 0 # total number of buy actions without enough cash
 
         self.portfolio_start_cash = start_cash
         self.portfolio_trading_cost = trading_cost
         self.portfolio_buy_volume = buy_volume
+        self.portfolio_proportional_buy_volume = proportional_buy_volume
 
         self.step_counter = 0
         self.is_done = False
@@ -64,6 +68,10 @@ class RoboAdvisorEnvV10(gym.Env):
         self.last_count_buy_trades = 0
         self.last_count_sell_trades = 0
         self.last_avg_held_days = 0
+        self.last_avg_gain = 0
+        self.last_total_over_sell = 0 # total number of sell actions without holding stock
+        self.last_total_over_buy = 0 # total number of buy actions without enough cash
+
 
     def reset(self):
 
@@ -72,6 +80,9 @@ class RoboAdvisorEnvV10(gym.Env):
             self.last_count_buy_trades = self.portfolio.buy_trades
             self.last_count_sell_trades = self.portfolio.sell_trades
             self.last_avg_held_days = self.portfolio.get_average_held_day()
+            self.last_avg_gain = self.portfolio.get_average_gain()
+            self.last_total_over_buy = self.total_over_buy
+            self.last_total_over_sell = self.total_over_sell
 
         print("\nstart episode", end="")
         # numpy array to hold the current value at every step
@@ -81,8 +92,11 @@ class RoboAdvisorEnvV10(gym.Env):
 
         self.step_counter = 0
         self.is_done = False
+        self.total_over_buy  = 0
+        self.total_over_sell = 0
         self.portfolio = Portfolio(self.universe, self.portfolio_start_cash,
-                                   self.portfolio_trading_cost, self.portfolio_buy_volume)
+                                   self.portfolio_trading_cost, self.portfolio_buy_volume,
+                                   self.portfolio_proportional_buy_volume)
         self._advance_time()
 
         return self._calculate_state(self.current_evaluation_day)
@@ -128,12 +142,15 @@ class RoboAdvisorEnvV10(gym.Env):
         action_pd.set_index('ticker', inplace= True)
 
         positions = self.portfolio.get_current_positions()
-
+        sell_actions = action_pd[action_pd.action == 2]
         # first: execute sell action - we can only sell shares we own
-        to_sell = pd.merge(action_pd[action_pd.action == 2], positions, left_index=True, right_index=True)
+        to_sell = pd.merge(sell_actions, positions, left_index=True, right_index=True)
         tickers_to_sell = to_sell.index.to_list()
         for ticker in tickers_to_sell:
             self.portfolio.add_sell_trade(ticker, self.current_trading_day)
+
+        # add nr of sell actions for which no stock was in the portfolio
+        self.total_over_sell += sell_actions.shape[0] - len(tickers_to_sell)
 
         # second: execute buy action
         # how many titles can be bought based on the available cash?
@@ -143,11 +160,14 @@ class RoboAdvisorEnvV10(gym.Env):
 
         tickers_to_buy = set(action_pd[action_pd.action == 1].index.to_list())
 
+        # add nr of buy actions for which not enough cash is available
+        self.total_over_buy += len(tickers_to_buy) - possible_buy_trades
+
         # don't buy if already in portfolio
         tickers_to_buy = tickers_to_buy - set(positions.index.to_list())
+
         if len(tickers_to_buy) == 0:
             return
-
         # if there are more 'buy' suggestions than there is cash to buy all, we have to decide which to buy
         if len(tickers_to_buy) > possible_buy_trades:
 
