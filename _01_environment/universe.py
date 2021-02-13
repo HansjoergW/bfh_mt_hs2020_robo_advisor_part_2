@@ -2,7 +2,7 @@ import pandas as pd
 from pandas import Timestamp
 from typing import List, Dict
 
-ROBO_ADVISOR_DATA_FILE = "D:/data_mt/09_training/robo_train_set.csv"
+ROBO_ADVISOR_DATA_FILE = "D:/data_mt/09_training_robo/robo_train_set.csv"
 
 # Attention, there are companies which don't have data right from the beginning
 #
